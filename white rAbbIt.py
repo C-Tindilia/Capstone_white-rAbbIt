@@ -2,6 +2,7 @@
 import sys
 import os
 import subprocess
+import threading
 from PyQt5.QtCore import Qt, QTimer, pyqtSlot
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QPushButton, QTextEdit, QProgressBar,
@@ -69,18 +70,18 @@ class MalwareAnalyzer(QMainWindow):
 
         #white rAbbIt logo in the top-left corner and scaled to extend vertically across 3 rows
         self.logo = QLabel(self)
-        self.logo.setPixmap(QPixmap("C:/Users/caela/Desktop/Designer(3).jpeg").scaled(200, 400, Qt.KeepAspectRatio))
+        self.logo.setPixmap(QPixmap("/home/white-rabbit/Desktop/capstone/images /Designer(3).jpeg").scaled(200, 400, Qt.KeepAspectRatio))
         self.main_layout.addWidget(self.logo, 0, 0, 3, 1)  # Extend image vertically across 3 rows
 
         #Created "Start Emulator" button. Connects its click event to the start_emulator method.
         self.start_emulator_button = QPushButton("Start Emulator")
         self.start_emulator_button.clicked.connect(self.start_emulator)
-        self.main_layout.addWidget(self.start_emulator_button, 2, 0)
+        self.main_layout.addWidget(self.start_emulator_button, 3, 0)
 
         #Created "Analyze APK" button. Connects its click event to select_apk method
         self.select_button = QPushButton("Select APK")
         self.select_button.clicked.connect(self.select_apk)
-        self.main_layout.addWidget(self.select_button, 3, 0)
+        self.main_layout.addWidget(self.select_button, 2, 0)
 
         #Created "Analyze APK" button (red). Connects its click event to analyze_apk method 
         self.analyze_button = QPushButton("Analyze APK")
@@ -103,13 +104,13 @@ class MalwareAnalyzer(QMainWindow):
         #Sets up a label for model insights 
         self.report_button = QPushButton("Generate Report")
         self.report_button.clicked.connect(self.generate_report)
-        self.main_layout.addWidget(self.report_button, 4, 0)
+        self.main_layout.addWidget(self.report_button, 5, 0)
 
         #Text area for model explanation
         ####self.model_insights_display = QLabel("Extracted Feature Summary")###############
         self.model_explanation_button = QPushButton("Model Explanation")
         self.model_explanation_button.clicked.connect(self.show_model_explanation)
-        self.main_layout.addWidget(self.model_explanation_button, 5, 0)
+        self.main_layout.addWidget(self.model_explanation_button, 4, 0)
 
         self.model_insights_display = QTextEdit(self)
         self.model_insights_display.setReadOnly(True)
@@ -169,7 +170,7 @@ class MalwareAnalyzer(QMainWindow):
         container.setLayout(self.main_layout)
         self.setCentralWidget(container)
 
-    #
+    
     @pyqtSlot()
     def select_apk(self):
         file_dialog = QFileDialog(self)
@@ -207,10 +208,24 @@ class MalwareAnalyzer(QMainWindow):
 
     @pyqtSlot()
     def start_emulator(self):
-        # Execute the batch file to start the emulator
-        # Popen starts the process and immediately returns, allowing the GUI to remain responsive while the emulator runs
-        subprocess.Popen(['C:\\Users\\caela\\Desktop\\emulator.bat'], shell=True)
-
+        try:
+            #Specify the directory containing the emulator executable
+            emulator_dir = "/home/white-rabbit/Android/Sdk/emulator"
+            #Define the emulator command
+            emulator_command = "./emulator -avd Medium_Phone_API_27 -verbose"
+            
+            def run_emulator():
+                #Runs the emulator command. This function is executed in a seperate thread to prevent 
+                #blocking the GUI.
+                process = subprocess.Popen(emulator_command, shell=True, cwd=emulator_dir)
+                process.wait()  
+                
+            threading.Thread(target=run_emulator).start()
+            
+        except Exception as e:
+            print(f"Error starting emulator: {e}")
+            self.logs_display.setText(f"Error starting emulator: {e}")
+            
     def show_model_explanation(self):
         # Provide insights into the model's decision-making process. Uses placeholder for now 
         self.model_insights_display.setText("Model explanation will be shown here.")
