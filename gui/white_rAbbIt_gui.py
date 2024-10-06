@@ -70,7 +70,7 @@ class MalwareAnalyzer(QMainWindow):
 
         #white rAbbIt logo in the top-left corner and scaled to extend vertically across 3 rows
         self.logo = QLabel(self)
-        self.logo.setPixmap(QPixmap("/home/white-rabbit/Desktop/capstone/images /Designer(3).jpeg").scaled(200, 400, Qt.KeepAspectRatio))
+        self.logo.setPixmap(QPixmap("images /Designer(3).jpeg").scaled(200, 400, Qt.KeepAspectRatio))
         self.main_layout.addWidget(self.logo, 0, 0, 3, 1)  # Extend image vertically across 3 rows
 
         #Created "Start Emulator" button. Connects its click event to the start_emulator method.
