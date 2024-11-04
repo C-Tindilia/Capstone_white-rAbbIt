@@ -115,7 +115,7 @@ class FeatureExtractionWorker(QObject):
                 QApplication.processEvents()
                 method_str = str(method)
                 for category in ['API call signature', 'Commands signature']:
-                    for feature in features[category]:
+                    for feature in features[category]:   
                         if feature in method_str:
                             feature_presence[category][feature] = 1
 

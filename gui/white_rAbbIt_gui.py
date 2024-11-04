@@ -16,7 +16,6 @@ from static_feature_extraction_thread import FeatureExtractionWorker
 from sklearn.ensemble import RandomForestClassifier
 from static_analysis_XAI import static_XAI
 
-
 #Defined the MalwareAnalyzer class. QMainWindow class provides a main application window.
 class MalwareAnalyzer(QMainWindow):
     def __init__(self):
@@ -126,8 +125,8 @@ class MalwareAnalyzer(QMainWindow):
         self.main_layout.addWidget(self.model_insights_label, 12, 1)
         self.main_layout.addWidget(self.model_insights_display,  13, 1, 1, 4)
 
-        #Feature Extraction Status. Initializes the progress bar's value and maximum
-        self.feature_extraction_status_label = QLabel("Feature Extraction Status")
+        #Static Feature Extraction Status. Initializes the progress bar's value and maximum
+        self.feature_extraction_status_label = QLabel("Static Feature Extraction Status")
         self.feature_extraction_status = QProgressBar(self)
         self.feature_extraction_status.setValue(0)
         self.feature_extraction_status.setMaximum(100)
@@ -135,15 +134,14 @@ class MalwareAnalyzer(QMainWindow):
         self.main_layout.addWidget(self.feature_extraction_status_label, 3, 1)
         self.main_layout.addWidget(self.feature_extraction_status, 4, 1)
 
-
-        #Malware analysis gauge. Initializes the progress bar's value and maximum
-        self.analysis_gauge_label = QLabel("Malware Analysis Progress")
+        #Static Malware analysis gauge. Initializes the progress bar's value and maximum
+        self.analysis_gauge_label = QLabel("Static Malware Analysis Progress")
         self.analysis_gauge = QProgressBar(self)
         self.analysis_gauge.setValue(0)
         self.analysis_gauge.setMaximum(100)
         self.main_layout.addWidget(self.analysis_gauge_label, 3, 2)
         self.main_layout.addWidget(self.analysis_gauge, 4, 2)
-
+        
         #Results gauge (confidence score)
         self.results_gauge_label = QLabel("Analysis Confidence Score")
         self.results_gauge = QProgressBar(self)
@@ -151,24 +149,51 @@ class MalwareAnalyzer(QMainWindow):
         self.results_gauge.setMaximum(100)
         self.main_layout.addWidget(self.results_gauge_label, 3, 3)
         self.main_layout.addWidget(self.results_gauge, 4, 3)
+        
+        
+        #Dynamic Feature Extraction Status. Initializes the progress bar's value and maximum
+        self.dynamic_feature_extraction_status_label = QLabel("Dynamic Feature Extraction Status")
+        self.dynamic_feature_extraction_status = QProgressBar(self)
+        self.dynamic_feature_extraction_status.setValue(0)
+        self.dynamic_feature_extraction_status.setMaximum(100)
+        self.thread = None
+        self.main_layout.addWidget(self.dynamic_feature_extraction_status_label, 5, 1)
+        self.main_layout.addWidget(self.dynamic_feature_extraction_status, 6, 1)
+
+        #Dynamic Malware analysis gauge. Initializes the progress bar's value and maximum
+        self.dynamic_analysis_gauge_label = QLabel("Dynamic Malware Analysis Progress")
+        self.dynamic_analysis_gauge = QProgressBar(self)
+        self.dynamic_analysis_gauge.setValue(0)
+        self.dynamic_analysis_gauge.setMaximum(100)
+        self.main_layout.addWidget(self.dynamic_analysis_gauge_label, 5, 2)
+        self.main_layout.addWidget(self.dynamic_analysis_gauge, 6, 2)
+
+        #Results gauge (confidence score)
+        self.dynamic_results_gauge_label = QLabel("Dynamic Analysis Confidence Score")
+        self.dynamic_results_gauge = QProgressBar(self)
+        self.dynamic_results_gauge.setValue(0)
+        self.dynamic_results_gauge.setMaximum(100)
+        self.main_layout.addWidget(self.dynamic_results_gauge_label, 5, 3)
+        self.main_layout.addWidget(self.dynamic_results_gauge, 6, 3)
+
 
         #Logs Display Area
         self.logs_display_label = QLabel("Captured Logs")
         self.logs_display = QTextEdit(self)
         self.logs_display.setReadOnly(True)
-        self.main_layout.addWidget(self.logs_display_label, 5, 1)
-        self.main_layout.addWidget(self.logs_display, 7, 1, 1, 3)
+        self.main_layout.addWidget(self.logs_display_label, 7, 1)
+        self.main_layout.addWidget(self.logs_display, 8, 1, 1, 3)
 
         
         #Clear Logs Button
         self.clear_logs_button = QPushButton("Clear Logs")
         self.clear_logs_button.clicked.connect(self.clear_logs)
-        self.main_layout.addWidget(self.clear_logs_button, 8, 1)
+        self.main_layout.addWidget(self.clear_logs_button, 9, 1)
 
         #Save Logs Button
         self.save_logs_button = QPushButton("Save Logs")
         self.save_logs_button.clicked.connect(self.save_logs)
-        self.main_layout.addWidget(self.save_logs_button, 8, 3)
+        self.main_layout.addWidget(self.save_logs_button, 9, 3)
 
         #Feature Summary Display
         self.feature_summary_label = QLabel("Extracted Feature Summary")
@@ -205,27 +230,29 @@ class MalwareAnalyzer(QMainWindow):
 
     @pyqtSlot()
     def analyze_apk(self):
-        if self.apk_file:
-            self.logs_display.append("Extracting features in support of static analysis...")
+        try: 
+            if self.apk_file:
+                self.logs_display.append("Extracting features in support of static analysis...")
 
-            # Create a QThread for feature extraction
-            self.thread = QThread()
-            self.worker = FeatureExtractionWorker(self.apk_file)
+                # Create a QThread for feature extraction
+                self.thread = QThread()
+                self.worker = FeatureExtractionWorker(self.apk_file)
 
-            # Move the worker to the thread
-            self.worker.moveToThread(self.thread)
+                # Move the worker to the thread
+                self.worker.moveToThread(self.thread)
 
-            # Connect signals and slots
-            self.thread.started.connect(self.worker.run)
-            self.worker.progress.connect(self.update_progress_bar)
-            self.worker.finished.connect(self.feature_extraction_finished)
-            self.worker.error.connect(self.feature_extraction_error)
+                # Connect signals and slots
+                self.thread.started.connect(self.worker.run)
+                self.worker.progress.connect(self.update_progress_bar)
+                self.worker.finished.connect(self.feature_extraction_finished)
+                self.worker.error.connect(self.feature_extraction_error)
 
-            # Start the thread
-            self.thread.start()
-
-        else:
-            self.logs_display.append("Error: No APK file selected. Please select an APK file first.")
+                # Start the thread
+                self.thread.start()
+            else:
+                self.logs_display.append("Error: No APK file selected. Please select an APK file first.")
+        except:
+            self.logs_display.append(f"Error: No APK file selected. Please select an APK file first.")
 
     def update_progress_bar(self, progress):
         self.feature_extraction_status.setValue(progress)
@@ -317,7 +344,7 @@ class MalwareAnalyzer(QMainWindow):
     def start_emulator(self):
         try:
             #Specify the directory containing the emulator executable
-            emulator_dir = "/home/white-rabbit/Android/Sdk/emulator"
+            emulator_dir = "Android/Sdk/emulator"
             #Define the emulator command
             emulator_command = "./emulator -avd Medium_Phone_API_27 -verbose"
             
