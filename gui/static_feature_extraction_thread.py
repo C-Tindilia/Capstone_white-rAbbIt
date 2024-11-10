@@ -1,7 +1,8 @@
+'''
 ###################
 #Feature extractor#
 ###################
-'''
+
 This function extracts features from an Android APK file using the Androguard library. 
 The class is designed to run in a separate thread to avoid blocking the main application.
 
@@ -23,14 +24,13 @@ from androguard.misc import AnalyzeAPK
 
 class FeatureExtractionWorker(QObject):
     progress = pyqtSignal(int)  # Signal to emit progress
-    finished = pyqtSignal(pd.DataFrame)  # Signal to emit when extraction is complete
+    finished = pyqtSignal(pd.DataFrame,str)  # Signal to emit when extraction is complete
     error = pyqtSignal(str)  # Signal to emit if there's an error
 
     def __init__(self, apk_file):
         super().__init__()
         self.apk_file = apk_file
 
-    
     def run(self):
         try:
             # Categorized list of features
@@ -85,29 +85,28 @@ class FeatureExtractionWorker(QObject):
             feature_presence = {category: {feature: 0 for feature in features[category]} for category in features}
 
             # Analyze the APK
-            '''
-                Loading the APK: It loads the APK file and extracts its contents, including the manifest 
-                and classes.Decoding DEX Files: It decodes the DEX (Dalvik Executable) files inside the APK, 
-                converting them into a format that can be analyzed. This process includes converting bytecode 
-                into a more readable form (often using Smali or Java-like representations).
-                    
-                    apk: This object contains the APK metadata and allows you to access the permissions and other high-level details.
-                    dvm: This object represents the Dalvik Virtual Machine, which allows for more in-depth analysis of the DEX bytecode.
-                    dx: This is where you can access the decoded methods, classes, and other components from the APK's DEX files.
-            '''
-
             apk, _, dx = AnalyzeAPK(self.apk_file)
 
             # Extract permissions and methods from the APK
             permissions = apk.get_permissions()
             methods = dx.get_methods()
+            app_name = apk.get_app_name()
+
+            print(f"Extracted permissions: {permissions}")
+            ####print(f"Extracted methods: {[str(method) for method in methods]}")
 
             # Check for feature presence in 'Manifest Permission'
             for feature in features['Manifest Permission']:
                 self.progress.emit(25)
                 QApplication.processEvents()
-                if feature in permissions:
+                print(f"Checking permission feature: {feature}")
+                #Ensure that the features listed in your Manifest Permission match 
+                #the permissions exactly, including any prefix (like android.permission.)
+                if f'android.permission.{feature}' in permissions:
                     feature_presence['Manifest Permission'][feature] = 1
+                    print(f"\033[32mFound permission: {feature}\033[0m")
+                else:
+                    print(f"Permission not found: {feature}")
 
             # Check for feature presence in 'API call signature' and 'Commands signature'
             for method in methods:
@@ -115,7 +114,8 @@ class FeatureExtractionWorker(QObject):
                 QApplication.processEvents()
                 method_str = str(method)
                 for category in ['API call signature', 'Commands signature']:
-                    for feature in features[category]:   
+                    for feature in features[category]:
+                        print(f"Checking method feature: {feature} in {method_str}")
                         if feature in method_str:
                             feature_presence[category][feature] = 1
 
@@ -123,24 +123,28 @@ class FeatureExtractionWorker(QObject):
             for feature in features['Intent']:
                 self.progress.emit(75)
                 QApplication.processEvents()
-                if feature in permissions or feature in str(methods):
+                print(f"Checking intent feature: {feature}")
+                if feature in permissions or any(feature in str(method) for method in methods):
                     feature_presence['Intent'][feature] = 1
 
             # Convert the feature presence dictionary to a DataFrame
-            flat_features = {f"{feature}": presence 
-                             for feature_dict in feature_presence.values() 
-                             for feature, presence in feature_dict.items()}
-            unordered_df = pd.DataFrame([flat_features])
+            flat_features = {feature: presence 
+                             for category in feature_presence 
+                             for feature, presence in feature_presence[category].items()}
+            df = pd.DataFrame([flat_features])
             
-            #Reorder the columns of the new dataframe so that the feature names are in 
-            #the same order they were in fit 
+            # Reorder the DataFrame columns to match the trained model DataFrame
             df_used_for_fit = pd.read_csv('models/static/trained model/static_training_df.csv')
-            df = unordered_df.reindex(columns=df_used_for_fit.columns)
-            df.to_csv('gui/feature_presence_results.csv',index=False)
-            
+            df = df.reindex(columns=df_used_for_fit.columns)
+
+            # Save the results to a CSV file
+            df.to_csv('gui/feature_presence_results.csv', index=False)
+
             # Set progress to 100%
             self.progress.emit(100)  
-            self.finished.emit(df)
+            # Emit/return feature_presence_df and _app_name
+            self.finished.emit(df,app_name)
 
         except Exception as e:
             self.error.emit(str(e))
+

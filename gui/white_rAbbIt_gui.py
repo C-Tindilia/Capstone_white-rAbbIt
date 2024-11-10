@@ -15,6 +15,11 @@ import joblib
 from static_feature_extraction_thread import FeatureExtractionWorker
 from sklearn.ensemble import RandomForestClassifier
 from static_analysis_XAI import static_XAI
+####
+import time
+from emulator_thread import EmulatorThread 
+####
+
 
 #Defined the MalwareAnalyzer class. QMainWindow class provides a main application window.
 class MalwareAnalyzer(QMainWindow):
@@ -77,23 +82,18 @@ class MalwareAnalyzer(QMainWindow):
         self.main_layout.addWidget(self.description_label, 1, 1, 1, 3)
 
         #white rAbbIt logo in the top-left corner and scaled to extend vertically across 3 rows
-        self.logo = QLabel(self)
-        self.logo.setPixmap(QPixmap("images/Designer(3).jpeg").scaled(200, 400, Qt.KeepAspectRatio))
-        self.main_layout.addWidget(self.logo, 0, 0, 3, 1)  # Extend image vertically across 3 rows
+        self.main_logo = QLabel(self)
+        self.main_logo.setPixmap(QPixmap("images/Designer(3).jpeg").scaled(200, 400, Qt.KeepAspectRatio))
+        self.main_layout.addWidget(self.main_logo, 0, 0, 3, 1)  # Extend image vertically across 3 rows
 
-        #Created "Start Emulator" button. Connects its click event to the start_emulator method.
-        self.start_emulator_button = QPushButton("Start Emulator")
-        self.start_emulator_button.clicked.connect(self.start_emulator)
-        self.main_layout.addWidget(self.start_emulator_button, 3, 0)
-
-        #Created "Analyze APK" button. Connects its click event to select_apk method
+        #Created "Select APK" button. Connects its click event to select_apk method
         self.select_button = QPushButton("Select APK")
         self.select_button.clicked.connect(self.select_apk)
         self.main_layout.addWidget(self.select_button, 2, 0)
 
-        #Created "Analyze APK" button (red). Connects its click event to analyze_apk method 
-        self.analyze_button = QPushButton("Analyze APK")
-        self.analyze_button.setStyleSheet("""
+        #Created "Static Analysis" button (red). Connects its click event to analyze_apk method 
+        self.static_analysis_button = QPushButton("Static Analysis")
+        self.static_analysis_button.setStyleSheet("""
             QPushButton {
                 background-color: #D32F2F;
                 color: #FFFFFF;
@@ -105,25 +105,29 @@ class MalwareAnalyzer(QMainWindow):
                 background-color: #F44336;
             }
         """)
-        self.analyze_button.clicked.connect(self.analyze_apk)
-        self.main_layout.addWidget(self.analyze_button, 2, 1, 1, 3)
+        self.static_analysis_button.clicked.connect(self.analyze_apk)
+        self.main_layout.addWidget(self.static_analysis_button, 2, 1, 1, 3)
 
-        #Created "Model Explanation" button. Connects its click event to show_model_explanation method
-        #Sets up a label for model insights 
-        self.report_button = QPushButton("Generate Report")
-        self.report_button.clicked.connect(self.generate_report)
-        self.main_layout.addWidget(self.report_button, 5, 0)
+        #Save Logs Button
+        self.save_logs_button = QPushButton("Save Logs")
+        self.save_logs_button.clicked.connect(self.save_logs)
+        self.main_layout.addWidget(self.save_logs_button, 3, 0)
 
-        #Text area for model explanation
+        #Clear Logs Button
+        self.clear_logs_button = QPushButton("Clear Logs")
+        self.clear_logs_button.clicked.connect(self.clear_logs)
+        self.main_layout.addWidget(self.clear_logs_button, 4, 0)
+
+        #Model Explanation Button. Connects its click event to show_model_explanation method
         self.model_insights_label = QLabel("XAI (LIME) Simplified Results")
         self.model_explanation_button = QPushButton("Model Explanation")
         self.model_explanation_button.clicked.connect(self.show_model_explanation)
-        self.main_layout.addWidget(self.model_explanation_button, 4, 0)
+        self.main_layout.addWidget(self.model_explanation_button, 5, 0)
 
-        self.model_insights_display = QTextEdit(self)
-        self.model_insights_display.setReadOnly(True)
-        self.main_layout.addWidget(self.model_insights_label, 12, 1)
-        self.main_layout.addWidget(self.model_insights_display,  13, 1, 1, 4)
+        #Generate Report Button. Connects its click event to generate_report method
+        self.report_button = QPushButton("Generate Report")
+        self.report_button.clicked.connect(self.generate_report)
+        self.main_layout.addWidget(self.report_button, 6, 0)
 
         #Static Feature Extraction Status. Initializes the progress bar's value and maximum
         self.feature_extraction_status_label = QLabel("Static Feature Extraction Status")
@@ -143,13 +147,29 @@ class MalwareAnalyzer(QMainWindow):
         self.main_layout.addWidget(self.analysis_gauge, 4, 2)
         
         #Results gauge (confidence score)
-        self.results_gauge_label = QLabel("Analysis Confidence Score")
+        self.results_gauge_label = QLabel("Static Analysis Confidence Score")
         self.results_gauge = QProgressBar(self)
         self.results_gauge.setValue(0)
         self.results_gauge.setMaximum(100)
         self.main_layout.addWidget(self.results_gauge_label, 3, 3)
         self.main_layout.addWidget(self.results_gauge, 4, 3)
-        
+
+        #Created "Dynamic Analysis" button (red). Connects its click event to start_emulator method 
+        self.dynamic_analysis_button = QPushButton("Dynamic Analysis")
+        self.dynamic_analysis_button.setStyleSheet("""
+            QPushButton {
+                background-color: #D32F2F;
+                color: #FFFFFF;
+                border-radius: 5px;
+                padding: 10px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #F44336;
+            }
+        """)
+        self.dynamic_analysis_button.clicked.connect(self.start_dynamic_analysis)
+        self.main_layout.addWidget(self.dynamic_analysis_button, 5, 1, 1, 3)
         
         #Dynamic Feature Extraction Status. Initializes the progress bar's value and maximum
         self.dynamic_feature_extraction_status_label = QLabel("Dynamic Feature Extraction Status")
@@ -157,50 +177,51 @@ class MalwareAnalyzer(QMainWindow):
         self.dynamic_feature_extraction_status.setValue(0)
         self.dynamic_feature_extraction_status.setMaximum(100)
         self.thread = None
-        self.main_layout.addWidget(self.dynamic_feature_extraction_status_label, 5, 1)
-        self.main_layout.addWidget(self.dynamic_feature_extraction_status, 6, 1)
+        self.main_layout.addWidget(self.dynamic_feature_extraction_status_label, 6, 1)
+        self.main_layout.addWidget(self.dynamic_feature_extraction_status, 7, 1)
 
         #Dynamic Malware analysis gauge. Initializes the progress bar's value and maximum
         self.dynamic_analysis_gauge_label = QLabel("Dynamic Malware Analysis Progress")
         self.dynamic_analysis_gauge = QProgressBar(self)
         self.dynamic_analysis_gauge.setValue(0)
         self.dynamic_analysis_gauge.setMaximum(100)
-        self.main_layout.addWidget(self.dynamic_analysis_gauge_label, 5, 2)
-        self.main_layout.addWidget(self.dynamic_analysis_gauge, 6, 2)
+        self.main_layout.addWidget(self.dynamic_analysis_gauge_label, 6, 2)
+        self.main_layout.addWidget(self.dynamic_analysis_gauge, 7, 2)
 
         #Results gauge (confidence score)
         self.dynamic_results_gauge_label = QLabel("Dynamic Analysis Confidence Score")
         self.dynamic_results_gauge = QProgressBar(self)
         self.dynamic_results_gauge.setValue(0)
         self.dynamic_results_gauge.setMaximum(100)
-        self.main_layout.addWidget(self.dynamic_results_gauge_label, 5, 3)
-        self.main_layout.addWidget(self.dynamic_results_gauge, 6, 3)
-
+        self.main_layout.addWidget(self.dynamic_results_gauge_label, 6, 3)
+        self.main_layout.addWidget(self.dynamic_results_gauge, 7, 3)
 
         #Logs Display Area
-        self.logs_display_label = QLabel("Captured Logs")
+        self.logs_display_label = QLabel("Application Logs")
         self.logs_display = QTextEdit(self)
         self.logs_display.setReadOnly(True)
-        self.main_layout.addWidget(self.logs_display_label, 7, 1)
-        self.main_layout.addWidget(self.logs_display, 8, 1, 1, 3)
+        self.main_layout.addWidget(self.logs_display_label, 8, 1)
+        self.main_layout.addWidget(self.logs_display, 9, 1, 7, 1)
 
-        
-        #Clear Logs Button
-        self.clear_logs_button = QPushButton("Clear Logs")
-        self.clear_logs_button.clicked.connect(self.clear_logs)
-        self.main_layout.addWidget(self.clear_logs_button, 9, 1)
-
-        #Save Logs Button
-        self.save_logs_button = QPushButton("Save Logs")
-        self.save_logs_button.clicked.connect(self.save_logs)
-        self.main_layout.addWidget(self.save_logs_button, 9, 3)
-
-        #Feature Summary Display
+        #Feature Summary Display Area 
         self.feature_summary_label = QLabel("Extracted Feature Summary")
         self.feature_summary_display = QTextEdit(self)
         self.feature_summary_display.setReadOnly(True)
-        self.main_layout.addWidget(self.feature_summary_label, 10, 1)
-        self.main_layout.addWidget(self.feature_summary_display, 11, 1, 1, 4)
+        self.main_layout.addWidget(self.feature_summary_label, 8, 2)
+        self.main_layout.addWidget(self.feature_summary_display, 9, 2, 7, 1)
+
+        #XAI Display Area 
+        self.model_insights_display = QTextEdit(self)
+        self.model_insights_display.setReadOnly(True)
+        self.main_layout.addWidget(self.model_insights_label, 8, 3)
+        self.main_layout.addWidget(self.model_insights_display,  9, 3, 1, 1)
+
+        #Overall Determination
+        self.overall_class_label = QLabel("Hyrid Classification Results")
+        self.overall_class_display = QTextEdit(self)
+        self.overall_class_display.setReadOnly(True)
+        self.main_layout.addWidget(self.overall_class_label, 10, 3)
+        self.main_layout.addWidget(self.overall_class_display, 11, 3, 5, 1)
 
         #Create central widget and set layout
         container = QWidget()
@@ -209,7 +230,17 @@ class MalwareAnalyzer(QMainWindow):
 
         # Load the static trained model
         self.load_model()
- 
+
+        #######
+        # Initialize EmulatorThread
+        self.apk_file = None
+        self.worker_thread = None
+        self.emulator_thread = None
+        
+        self.emulator_dir = "Android/Sdk/emulator"
+        self.emulator_command = "./emulator -avd Medium_Phone_API_27 -verbose -no-boot-anim -no-snapshot-load"
+        self.adb_command = ["adb", "devices"]
+        #######
 
     def load_model(self):
         #Load the pre-trained model from the joblib file 
@@ -227,7 +258,16 @@ class MalwareAnalyzer(QMainWindow):
         self.apk_file = apk_file
         # Update log display with selected APK info
         self.logs_display.append(f"Selected APK: {os.path.basename(apk_file)}")
+        
+        #Restart guages when new APK is selected 
+        self.feature_extraction_status.setValue(0)
+        self.analysis_gauge.setValue(0)
+        self.results_gauge.setValue(0)
 
+        # Remove the Android logo when a new APK is selected if present
+        if hasattr(self, 'logo') and self.logo:
+            self.logo.clear()
+        
     @pyqtSlot()
     def analyze_apk(self):
         try: 
@@ -257,11 +297,23 @@ class MalwareAnalyzer(QMainWindow):
     def update_progress_bar(self, progress):
         self.feature_extraction_status.setValue(progress)
 
-    def feature_extraction_finished(self, feature_presence_df):
+    def feature_extraction_finished(self, feature_presence_df, app_name):
+        #############################
+        #Create a dataframe of all features whose value is '1' (present)
+        df_filtered = feature_presence_df.loc[:, feature_presence_df.eq(1).any()]
+        # Display app name discovered in AndroidManifest.xml
+        self.logs_display.append(f"App Name: {app_name}")
+        # Display the count of extracted features 
+        self.logs_display.append(f"Features present: {str(df_filtered.shape[1])}/{str(feature_presence_df.shape[1])}")
+        # Display the extracted features 
+        self.display_extracted_features(df_filtered)
+        ##############################
+        '''   
         # Display the count of extracted features 
         self.logs_display.append(f"Total features extracted: {str(feature_presence_df.shape[1])}")
         # Display the extracted features 
         self.display_extracted_features(feature_presence_df.columns)
+        '''
         # Pass the DataFrame to run_static_analysis for predictions
         self.run_static_analysis(feature_presence_df)
         # Stop the thread
@@ -319,7 +371,11 @@ class MalwareAnalyzer(QMainWindow):
         
         # Update  analysis confidence score gauge
         self.results_gauge.setValue(int(np.max(self.static_predict_probability[0])*100))
-                   
+    
+    
+    
+    def run_apk(self, apk_file):
+        pass    
 
     def extract_features_from_logs(self, logs):
         pass
@@ -340,28 +396,66 @@ class MalwareAnalyzer(QMainWindow):
     def generate_report(self):
         pass
 
+    
     @pyqtSlot()
-    def start_emulator(self):
+    def start_dynamic_analysis(self):
+        """Start dynamic analysis by launching the emulator and installing APK."""
         try:
-            #Specify the directory containing the emulator executable
-            emulator_dir = "Android/Sdk/emulator"
-            #Define the emulator command
-            emulator_command = "./emulator -avd Medium_Phone_API_27 -verbose"
+            if not self.apk_file:
+                self.logs_display.append("Error: No APK file selected.")
+                return
             
-            def run_emulator():
-                #Runs the emulator command. This function is executed in a seperate thread to prevent 
-                #blocking the GUI.
-                process = subprocess.Popen(emulator_command, shell=True, cwd=emulator_dir)
-                process.wait()  
-                
-            threading.Thread(target=run_emulator).start()
-            
+            # Create EmulatorThread to handle emulator and APK installation
+            self.emulator_thread = EmulatorThread(
+                self.emulator_dir, self.emulator_command, self.adb_command, self.apk_file
+            )
+
+            # Connect signals after the thread has been instantiated
+            self.emulator_thread.emulator_started.connect(self.on_emulator_started)
+            self.emulator_thread.emulator_ready.connect(self.on_emulator_ready)
+            self.emulator_thread.apk_installed.connect(self.on_apk_installed)
+            self.emulator_thread.feature_extraction_started.connect(self.start_feature_extraction)
+            self.emulator_thread.error.connect(self.on_error)
+            self.emulator_thread.log_signal.connect(self.update_logs_display)  # Connect log signal
+
+            # Start the emulator thread
+            self.emulator_thread.start()
+
         except Exception as e:
-            print(f"Error starting emulator: {e}")
-            self.logs_display.setText(f"Error starting emulator: {e}")
-            
+            self.logs_display.append(f"Error starting dynamic analysis: {e}")
+
+    #@pyqtSlot()
+    def on_emulator_started(self):
+        """Update GUI when the emulator starts."""
+        self.logs_display.append("Emulator started.")
+    #@pyqtSlot()
+    def on_emulator_ready(self):
+        """Update GUI when the emulator is ready."""
+        self.logs_display.append("Emulator is ready.")
+    @pyqtSlot()
+    def on_apk_installed(self):
+        """Update GUI when APK is installed."""
+        self.logs_display.append("APK installed successfully.")
+        #Do i want to put next steps here
+        
+    @pyqtSlot(str)
+    def on_error(self, error_msg):
+        """Handle errors in the emulator or APK installation process."""
+        self.logs_display.append(f"Error: {error_msg}")
+    
+    @pyqtSlot(str)
+    def update_logs_display(self, log_message):
+        """Update the logs display with messages from the emulator thread."""
+        self.logs_display.append(log_message)
+
+    def start_feature_extraction(self):
+        pass
+        '''"""Start feature extraction after APK installation."""
+        self.logs_display.append("Starting feature extraction for dynamic analysis...")
+        # Trigger feature extraction here
+        '''
+      
     def show_model_explanation(self):
-        # Provide insights into the model's decision-making process. Uses placeholder for now 
         if hasattr(self, 'lime_explanation'):
                                 
                 self.model_insights_display.append(f"Predicted Class: {np.argmax(self.static_predict_probability[0])}")
@@ -373,7 +467,7 @@ class MalwareAnalyzer(QMainWindow):
                     self.model_insights_display.append(f"{feature}: {weight:.2f}")
         else:
             self.model_insights_display.append("No explanation available. Run static analysis first.")
-     
+      
         
     def clear_logs(self):
         self.logs_display.clear()
