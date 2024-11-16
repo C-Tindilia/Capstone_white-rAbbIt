@@ -2,6 +2,8 @@
 #white rAbbIt GUI#   
 ##################
 
+
+
 import sys
 import os
 import subprocess
@@ -231,16 +233,15 @@ class MalwareAnalyzer(QMainWindow):
         # Load the static trained model
         self.load_model()
 
-        #######
         # Initialize EmulatorThread
         self.apk_file = None
         self.worker_thread = None
         self.emulator_thread = None
         
         self.emulator_dir = "Android/Sdk/emulator"
-        self.emulator_command = "./emulator -avd Medium_Phone_API_27 -verbose -no-boot-anim -no-snapshot-load"
+        self.emulator_command = "./emulator -avd Pixel_2_API_27 -verbose -wipe-data -no-boot-anim -no-snapshot-load"
         self.adb_command = ["adb", "devices"]
-        #######
+       
 
     def load_model(self):
         #Load the pre-trained model from the joblib file 
@@ -254,6 +255,7 @@ class MalwareAnalyzer(QMainWindow):
     def select_apk(self):
         file_dialog = QFileDialog(self)
         file_dialog.setFileMode(QFileDialog.ExistingFile)
+
         apk_file, _ = file_dialog.getOpenFileName(self, "Select APK File", "", "APK Files (*.apk)")
         self.apk_file = apk_file
         # Update log display with selected APK info
@@ -298,7 +300,6 @@ class MalwareAnalyzer(QMainWindow):
         self.feature_extraction_status.setValue(progress)
 
     def feature_extraction_finished(self, feature_presence_df, app_name):
-        #############################
         #Create a dataframe of all features whose value is '1' (present)
         df_filtered = feature_presence_df.loc[:, feature_presence_df.eq(1).any()]
         # Display app name discovered in AndroidManifest.xml
@@ -307,13 +308,7 @@ class MalwareAnalyzer(QMainWindow):
         self.logs_display.append(f"Features present: {str(df_filtered.shape[1])}/{str(feature_presence_df.shape[1])}")
         # Display the extracted features 
         self.display_extracted_features(df_filtered)
-        ##############################
-        '''   
-        # Display the count of extracted features 
-        self.logs_display.append(f"Total features extracted: {str(feature_presence_df.shape[1])}")
-        # Display the extracted features 
-        self.display_extracted_features(feature_presence_df.columns)
-        '''
+               
         # Pass the DataFrame to run_static_analysis for predictions
         self.run_static_analysis(feature_presence_df)
         # Stop the thread
@@ -353,13 +348,13 @@ class MalwareAnalyzer(QMainWindow):
                     self.logs_display.append(f"Static Analysis Classification Result: Benign")
                     self.logo = QLabel(self)
                     self.logo.setPixmap(QPixmap("images/Designer(6).jpeg").scaled(200, 400, Qt.KeepAspectRatio))
-                    self.main_layout.addWidget(self.logo, 6, 0, 6, 1)  # Extend image vertically across 6 rows
+                    self.main_layout.addWidget(self.logo, 7, 0, 6, 1)  # Extend image vertically across 6 rows
 
                 elif self.static_prediction[0] == 1:
                     self.logs_display.append(f"Static Analysis Classification Result: Malicious")
                     self.logo = QLabel(self)
                     self.logo.setPixmap(QPixmap("images/Designer(5).jpeg").scaled(200, 400, Qt.KeepAspectRatio))
-                    self.main_layout.addWidget(self.logo, 6, 0, 6, 1)  # Extend image vertically across 6 rows
+                    self.main_layout.addWidget(self.logo, 7, 0, 6, 1)  # Extend image vertically across 6 rows
 
             except Exception as e:
                 self.logs_display.append(f"Error during prediction: {e}")
@@ -396,6 +391,7 @@ class MalwareAnalyzer(QMainWindow):
     def generate_report(self):
         pass
 
+
     
     @pyqtSlot()
     def start_dynamic_analysis(self):
@@ -416,7 +412,8 @@ class MalwareAnalyzer(QMainWindow):
             self.emulator_thread.apk_installed.connect(self.on_apk_installed)
             self.emulator_thread.feature_extraction_started.connect(self.start_feature_extraction)
             self.emulator_thread.error.connect(self.on_error)
-            self.emulator_thread.log_signal.connect(self.update_logs_display)  # Connect log signal
+            self.emulator_thread.monkey_test.connect(self.simulated_user_interactions)
+            self.emulator_thread.log_signal.connect(self.update_logs_display)  
 
             # Start the emulator thread
             self.emulator_thread.start()
@@ -436,8 +433,12 @@ class MalwareAnalyzer(QMainWindow):
     def on_apk_installed(self):
         """Update GUI when APK is installed."""
         self.logs_display.append("APK installed successfully.")
-        #Do i want to put next steps here
-        
+
+    @pyqtSlot()
+    def simulated_user_interactions(self):
+        """Upadate GUI when user interation is simulated via monkey"""
+        self.logs_display.append("Monkey testing completed")
+
     @pyqtSlot(str)
     def on_error(self, error_msg):
         """Handle errors in the emulator or APK installation process."""

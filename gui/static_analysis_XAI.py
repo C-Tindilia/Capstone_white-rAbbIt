@@ -64,6 +64,7 @@ def static_XAI(self, feature_presence_df):
 
             # Display explanation
             self.logs_display.append("LIME explanation completed")
+            self.logs_display.append("Select another APK for static analysis or choose 'Dynamic Analysis' to analyze the selected APK's runtime behavior.")
 
             # Store the explanation object as an instance variable for the show_model_explanation()
             self.lime_explanation = explanation

@@ -90,9 +90,11 @@ class FeatureExtractionWorker(QObject):
             # Extract permissions and methods from the APK
             permissions = apk.get_permissions()
             methods = dx.get_methods()
+
+            #Extract the app name 
             app_name = apk.get_app_name()
 
-            print(f"Extracted permissions: {permissions}")
+            ####print(f"Extracted permissions: {permissions}")
             ####print(f"Extracted methods: {[str(method) for method in methods]}")
 
             # Check for feature presence in 'Manifest Permission'
