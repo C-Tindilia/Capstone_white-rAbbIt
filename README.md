@@ -161,7 +161,7 @@ This notebook contains:
 1. Create and activate a virtual environment (optional but recommended):
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate  
    ```
 
 2. Install the required Python modules:
@@ -177,8 +177,10 @@ This notebook contains:
 5. Select the other analysis type and monitor the feature extraction and logs in the interface.
 6. Review model insights and analysis results.
 7. Determine the overall classification 
-8. Generate th Hybrid Analysis report.
+8. Generate th Hybrid Analysis report (saved in working dir).
 
+### Demo 
+![demo.mp4](https://github.com/C-Tindilia/Capstone_white-rAbbIt/blob/main/demo.mp4?raw=true)
 ---
 
 
