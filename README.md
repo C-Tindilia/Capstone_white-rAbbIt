@@ -32,6 +32,9 @@ white rAbbIT is an automated Android malware analysis tool that combines static 
 - Automatically generates comprehensive analysis reports for users.
 ---
 
+### Operating System:
+- Ubuntu 24.04.1 LTS or later
+
 ## Prerequisites
 
 1. **Python**: Ensure Python 3.12.3 is installed.
