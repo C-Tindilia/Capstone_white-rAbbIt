@@ -1,9 +1,10 @@
-################################################
-#Explain static analysis prediction using LIME.#
-# ##############################################  
+#######################################################################################
+#                        Explain static analysis prediction using LIME                #                       
+####################################################################################### 
 """
 LIME gives a local explanation: it explains why a model made a specific prediction for 
-a specific instance by highlighting which features contributed the most.
+a specific instance by highlighting which features contributed the most. We return the 
+top 10 features.
 """
 
 from lime.lime_tabular import LimeTabularExplainer

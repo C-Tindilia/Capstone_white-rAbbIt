@@ -1,8 +1,7 @@
+#######################################################################################
+#                                  Static Feature extractor                           #                       
+####################################################################################### 
 '''
-###################
-#Feature extractor#
-###################
-
 This function extracts features from an Android APK file using the Androguard library. 
 The class is designed to run in a separate thread to avoid blocking the main application.
 
@@ -93,9 +92,6 @@ class FeatureExtractionWorker(QObject):
 
             #Extract the app name 
             app_name = apk.get_app_name()
-
-            ####print(f"Extracted permissions: {permissions}")
-            ####print(f"Extracted methods: {[str(method) for method in methods]}")
 
             # Check for feature presence in 'Manifest Permission'
             for feature in features['Manifest Permission']:
