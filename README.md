@@ -168,9 +168,9 @@ This notebook contains:
    ```bash
    pip install -r requirements.txt
    ```
+## To Run
 
-
-1. Launch the White rAbbIt application.
+1. Launch the white rAbbIt application (`white_rAbbIt_gui.py`)
 2. Load the APK file for analysis.
 3. Select either Static Analysis or Dynamic Analysis and monitor the feature extraction and logs in the interface.
 4. Review model insights and analysis results.
