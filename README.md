@@ -90,7 +90,7 @@ white rAbbIT is an automated Android malware analysis tool that combines static 
 ### 4. Install and Configure `tcpdump`
 
 1. **Download `tcpdump`**:
-   - Obtain the ARM/x86-compatible `tcpdump` binary from the [tcpdump-group](https://github.com/the-tcpdump-group) or use a precompiled binary for Android.
+   - Obtain the x86_64 `tcpdump` binary from the [tcpdump-group](https://github.com/the-tcpdump-group) or use a precompiled binary for Android.
 2. Push the binary to the emulator:
    ```bash
    adb push tcpdump /data/local/tmp/
