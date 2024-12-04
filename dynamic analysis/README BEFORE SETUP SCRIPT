@@ -1,0 +1,20 @@
+" To prepare the environment perform the scripts in this order:
+  
+  -- Installs the libtool-bin and python3-venv packages
+  .install_libs.sh
+   
+  -- Installs the strace
+  .install_strace.sh 
+
+  -- Installs inotifywait
+  .install_inotifywait.sh 
+
+  -- Installs tcpdump
+  .install_tcpdump.sh
+
+  -- Automates the setup of a malware analysis environment by installing / verifying required
+  system tools, setting up Python virtual environments, and pushing precompiled
+  binaries (strace, inotify-tools, tcpdump) to the Android emulator. Also generates a log to capture any errors for troubleshooting
+  envi_set.sh
+
+**** IMPORTANT TO CHANGE DIRECTORY LOCATION IF NEEDED ****
