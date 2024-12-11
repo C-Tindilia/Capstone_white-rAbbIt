@@ -181,7 +181,7 @@ This notebook contains:
 
 ## ISO
 
-[white rAbbIt ISO](https://drive.google.com/drive/u/1/folders/1koQsMzsb46wEjqlULfr4YeLGg-VG6N9i)
+[white rAbbIt ISO]([https://drive.google.com/drive/u/1/folders/1koQsMzsb46wEjqlULfr4YeLGg-VG6N9i](https://drive.google.com/drive/u/0/folders/1nqRxFtCyip32tQ9E4WURzc03sJYBVBUD))
 
 ### Demo 
 ![demo.mp4](https://github.com/C-Tindilia/Capstone_white-rAbbIt/blob/main/demo.mp4?raw=true)
